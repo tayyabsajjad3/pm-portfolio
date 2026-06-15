@@ -188,9 +188,9 @@ body {
 }
 
 .pm-form-fields {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
   margin-bottom: 16px;
 }
 
@@ -198,8 +198,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  min-width: 160px;
-  flex: 1;
+  min-width: 0;
 }
 
 .pm-form-field label {
@@ -208,11 +207,15 @@ body {
   color: #4a5c78;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pm-form-field input,
 .pm-form-field textarea,
 .pm-form-field select {
+  width: 100%;
   border: 1px solid #c0cfe0;
   border-radius: 5px;
   padding: 7px 10px;
@@ -221,6 +224,14 @@ body {
   background: #f8fafd;
   font-family: inherit;
   resize: vertical;
+  box-sizing: border-box;
+}
+
+.pm-form-field input:focus,
+.pm-form-field textarea:focus,
+.pm-form-field select:focus {
+  outline: none;
+  border-color: #0055a5;
 }
 
 .pm-form-actions { display: flex; gap: 10px; }
@@ -286,6 +297,7 @@ body {
 
 .pm-table tbody tr { border-bottom: 1px solid #edf1f9; transition: background 0.15s; }
 .pm-table tbody tr:hover { background: #f0f6ff; }
+
 .pm-table tbody td {
   padding: 10px 14px;
   color: #2a3a50;
@@ -340,6 +352,14 @@ body {
 
 .pm-no-data { text-align: center; padding: 50px 20px; color: #8a9ab8; font-style: italic; }
 
+/* Blank prompt */
+.pm-select-prompt {
+  text-align: center;
+  padding: 80px 20px;
+  color: #8a9ab8;
+  font-size: 1rem;
+}
+
 /* Totals */
 .pm-totals {
   background: #e8f0fa;
@@ -349,6 +369,10 @@ body {
   font-size: 0.88rem;
   color: #003366;
   margin-top: -1px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .pm-total-item {
@@ -357,18 +381,10 @@ body {
   border: 1px solid #b0c8e8;
   border-radius: 12px;
   padding: 3px 12px;
-  margin-right: 8px;
   font-weight: 600;
   color: #0055a5;
+  white-space: nowrap;
 }
 
 td.calc-cell { color: #2a3a50; cursor: default; }
 td.calc-cell:hover::after { display: none; }
-
-/* Select prompt */
-.pm-select-prompt {
-  text-align: center;
-  padding: 80px 20px;
-  color: #8a9ab8;
-  font-size: 1rem;
-}
