@@ -39,9 +39,9 @@ async function loadUsers() {
               <td>${u.email}</td>
               <td>${new Date(u.created_at).toLocaleDateString()}</td>
               <td>
-                <button class="action-btn approve-btn" onclick="updateRole('${u.id}', 'user')">✓ Approve</button>
-                <button class="action-btn make-admin-btn" onclick="updateRole('${u.id}', 'admin')">★ Make Admin</button>
-                <button class="action-btn reject-btn" onclick="deleteUser('${u.id}')">✕ Reject</button>
+                <button class="action-btn approve-btn" onclick="approveUser('${u.id}', '${u.email}', '${u.full_name || ''}')">✓ Approve</button>
+                <button class="action-btn make-admin-btn" onclick="approveAsAdmin('${u.id}', '${u.email}', '${u.full_name || ''}')">★ Approve as Admin</button>
+                <button class="action-btn reject-btn" onclick="rejectUser('${u.id}', '${u.email}', '${u.full_name || ''}')">✕ Reject</button>
               </td>
             </tr>
           `).join('')}
@@ -63,9 +63,9 @@ async function loadUsers() {
               <td>${u.email}</td>
               <td><span class="role-badge ${u.role}">${u.role}</span></td>
               <td>
-                ${u.role !== 'admin' ? `<button class="action-btn make-admin-btn" onclick="updateRole('${u.id}', 'admin')">★ Make Admin</button>` : ''}
-                ${u.role === 'admin' ? `<button class="action-btn make-user-btn" onclick="updateRole('${u.id}', 'user')">↓ Make User</button>` : ''}
-                <button class="action-btn reject-btn" onclick="deleteUser('${u.id}')">✕ Remove</button>
+                ${u.role !== 'admin' ? `<button class="action-btn make-admin-btn" onclick="updateRole('${u.id}', 'admin', '${u.email}', '${u.full_name || ''}', true)">★ Make Admin</button>` : ''}
+                ${u.role === 'admin' ? `<button class="action-btn make-user-btn" onclick="updateRole('${u.id}', 'user', '${u.email}', '${u.full_name || ''}', false)">↓ Make User</button>` : ''}
+                <button class="action-btn reject-btn" onclick="removeUser('${u.id}')">✕ Remove</button>
               </td>
             </tr>
           `).join('')}
@@ -74,17 +74,68 @@ async function loadUsers() {
   }
 }
 
-async function updateRole(userId, role) {
-  const { error } = await sb.from('profiles').update({ role }).eq('id', userId);
-  if (error) { alert('Error updating role: ' + error.message); return; }
+async function approveUser(userId, email, name) {
+  const { error } = await sb.from('profiles').update({ role: 'user' }).eq('id', userId);
+  if (error) { alert('Error: ' + error.message); return; }
+  sendApprovalEmail(email, name, 'user');
   loadUsers();
 }
 
-async function deleteUser(userId) {
-  if (!confirm('Remove this user? They will need to sign up again.')) return;
-  const { error } = await sb.from('profiles').delete().eq('id', userId);
-  if (error) { alert('Error removing user: ' + error.message); return; }
+async function approveAsAdmin(userId, email, name) {
+  const { error } = await sb.from('profiles').update({ role: 'admin' }).eq('id', userId);
+  if (error) { alert('Error: ' + error.message); return; }
+  sendApprovalEmail(email, name, 'admin');
   loadUsers();
+}
+
+async function updateRole(userId, role, email, name, isPromotion) {
+  const { error } = await sb.from('profiles').update({ role }).eq('id', userId);
+  if (error) { alert('Error: ' + error.message); return; }
+  if (isPromotion) sendRoleChangeEmail(email, name, role);
+  loadUsers();
+}
+
+async function removeUser(userId) {
+  if (!confirm('Remove this user?')) return;
+  const { error } = await sb.from('profiles').delete().eq('id', userId);
+  if (error) { alert('Error: ' + error.message); return; }
+  loadUsers();
+}
+
+async function rejectUser(userId, email, name) {
+  if (!confirm('Reject and remove this user?')) return;
+  const { error } = await sb.from('profiles').delete().eq('id', userId);
+  if (error) { alert('Error: ' + error.message); return; }
+  sendRejectionEmail(email, name);
+  loadUsers();
+}
+
+function sendApprovalEmail(email, name, role) {
+  const greeting = name ? `Hi ${name},` : 'Hi,';
+  const roleText = role === 'admin' ? 'admin access' : 'access';
+  const subject = encodeURIComponent('PM Portfolio Sheet — Account Approved');
+  const body = encodeURIComponent(
+    `${greeting}\n\nYour account has been approved! You now have ${roleText} to the PM Portfolio Sheet.\n\nYou can sign in at:\nhttps://tayyabsajjad3.github.io/pm-portfolio\n\nBest regards,\nPM Portfolio Admin`
+  );
+  window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+}
+
+function sendRoleChangeEmail(email, name, role) {
+  const greeting = name ? `Hi ${name},` : 'Hi,';
+  const subject = encodeURIComponent('PM Portfolio Sheet — Role Updated');
+  const body = encodeURIComponent(
+    `${greeting}\n\nYour role in the PM Portfolio Sheet has been updated to: ${role}.\n\nYou can sign in at:\nhttps://tayyabsajjad3.github.io/pm-portfolio\n\nBest regards,\nPM Portfolio Admin`
+  );
+  window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+}
+
+function sendRejectionEmail(email, name) {
+  const greeting = name ? `Hi ${name},` : 'Hi,';
+  const subject = encodeURIComponent('PM Portfolio Sheet — Account Request');
+  const body = encodeURIComponent(
+    `${greeting}\n\nWe were unable to approve your account request for the PM Portfolio Sheet at this time.\n\nIf you believe this is a mistake, please contact your administrator.\n\nBest regards,\nPM Portfolio Admin`
+  );
+  window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
 }
 
 init();
