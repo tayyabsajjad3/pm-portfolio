@@ -291,7 +291,14 @@ body {
   color: #2a3a50;
   vertical-align: top;
   white-space: pre-wrap;
-  word-break: break-word;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.pm-table tbody td.nowrap {
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .pm-table tbody td.editable { cursor: pointer; position: relative; }

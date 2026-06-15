@@ -7,7 +7,7 @@ const TABLE_CONFIG = {
     sortable: ['sap_id', 'nickname', 'delivery', 'forecast'],
     columns: [
       { label: 'SAP ID',         field: 'sap_id',         type: 'textarea', total: false, format: '', nowrap: true },
-      { label: 'Nickname',       field: 'nickname',        type: 'textarea', total: false, format: '', nowrap: true },
+      { label: 'Nickname',       field: 'nickname',        type: 'textarea', total: false, format: '' },
       { label: 'Delivery',       field: 'delivery',        type: 'number',   total: true,  format: 'currency', nowrap: true },
       { label: 'Forecast',       field: 'forecast',        type: 'number',   total: true,  format: 'currency', nowrap: true },
       { label: 'Imp. Rate',      field: 'imp_rate',        type: 'calc',     total: false, format: 'percent', nowrap: true,
@@ -23,12 +23,12 @@ const TABLE_CONFIG = {
     sortable: ['sap_id', 'stages'],
     columns: [
       { label: 'SAP ID',         field: 'sap_id',         type: 'textarea', total: false, format: '', nowrap: true },
-      { label: 'Nickname',       field: 'nickname',        type: 'textarea', total: false, format: '', nowrap: true },
-      { label: 'Country',        field: 'country',         type: 'textarea', total: false, format: '', nowrap: true },
-      { label: 'Region',         field: 'region',          type: 'select',   total: false, format: '', nowrap: true,
+      { label: 'Nickname',       field: 'nickname',        type: 'textarea', total: false, format: '' },
+      { label: 'Country',        field: 'country',         type: 'textarea', total: false, format: '' },
+      { label: 'Region',         field: 'region',          type: 'select',   total: false, format: '',
         options: ['Africa','Africa Arab States','West Asia Arab States','Asia and Pacific','Europe','Inter-Regional','Global','The Americas','N/A']
       },
-      { label: 'Donor',          field: 'donor',           type: 'textarea', total: false, format: '', nowrap: true },
+      { label: 'Donor',          field: 'donor',           type: 'textarea', total: false, format: '' },
       { label: 'Budget',         field: 'budget',          type: 'number',   total: true,  format: 'currency', nowrap: true },
       { label: 'Stages',         field: 'stages',          type: 'select',   total: false, format: '', nowrap: true,
         options: ['1- Department Concept review','2- SSS/PA Approval Workflow','3- SFS Internal Review','4- EB Approval','5- Donor Approval','6- Completed']
@@ -329,13 +329,13 @@ function renderTable(tableKey, rows) {
       config.columns.forEach(col => {
         const val = row[col.field] !== null && row[col.field] !== undefined ? row[col.field] : '';
         const fmt = col.format || '';
-        const nowrap = col.nowrap ? 'white-space:nowrap;' : '';
+        const nowrapClass = col.nowrap ? ' nowrap' : '';
         if (col.type === 'calc') {
           const calcVal = col.calc ? col.calc(row) : val;
-          bodyHtml += `<td class="calc-cell" data-field="${col.field}" style="${nowrap}">${formatValue(calcVal, fmt)}</td>`;
+          bodyHtml += `<td class="calc-cell${nowrapClass}" data-field="${col.field}">${formatValue(calcVal, fmt)}</td>`;
         } else {
           const displayVal = fmt ? formatValue(val, fmt) : escapeHtml(String(val));
-          bodyHtml += `<td class="editable" data-field="${col.field}" data-type="${col.type}" data-format="${fmt}" data-raw="${escapeHtml(String(val))}" style="${nowrap}">${displayVal}</td>`;
+          bodyHtml += `<td class="editable${nowrapClass}" data-field="${col.field}" data-type="${col.type}" data-format="${fmt}" data-raw="${escapeHtml(String(val))}">${displayVal}</td>`;
         }
       });
       bodyHtml += '<td class="action-col"><button class="pm-delete-btn">🗑</button></td>';
