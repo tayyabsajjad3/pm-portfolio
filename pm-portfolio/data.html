@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PM Portfolio Sheet</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="pm-data-wrapper">
+    <!-- Header -->
+    <div class="pm-header">
+      <div class="pm-header-left">
+        <h1 class="pm-header-title">PM Portfolio Sheet</h1>
+      </div>
+      <div class="pm-header-right">
+        <span class="pm-user-badge">
+          <span>👤</span>
+          <span id="userEmail">--</span>
+          <span id="adminBadge" style="display:none; background:rgba(255,255,255,0.2); padding:2px 8px; border-radius:10px; font-size:0.75rem;">ADMIN</span>
+        </span>
+        <button class="pm-logout-btn" onclick="handleLogout()">Sign Out</button>
+        <button id="adminPortalBtn" class="pm-admin-btn" style="display:none;" onclick="window.location.href='admin.html'">⚙ Admin</button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="pm-filters">
+      <div class="pm-filter-group">
+        <label>Portfolio Manager</label>
+        <select id="pmSelect">
+          <option value="">-- Select PM --</option>
+        </select>
+      </div>
+      <div class="pm-filter-group">
+        <label>Year</label>
+        <select id="yearSelect">
+          <option value="">-- Select Year --</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="pm-tabs">
+      <button data-table="ongoing" class="pm-tab active">Ongoing Projects</button>
+      <button data-table="pipeline" class="pm-tab">Pipeline</button>
+      <button data-table="partnerships" class="pm-tab">Partnerships</button>
+      <button data-table="knowledge" class="pm-tab">Knowledge Products</button>
+      <button data-table="innovations" class="pm-tab">Innovations</button>
+      <button data-table="admin" class="pm-tab">Admin</button>
+    </div>
+
+    <!-- Table Area -->
+    <div class="pm-table-area">
+      <div class="pm-table-toolbar">
+        <button id="addRowBtn" class="pm-add-btn">+ Add Row</button>
+        <button id="copyPipelineBtn" class="pm-add-btn" style="display:none; background:#2a7a2a;">⬇ Copy from Previous Year</button>
+        <span id="statusMsg" class="pm-status-msg"></span>
+      </div>
+
+      <!-- Add Row Form -->
+      <div id="addRowForm" class="pm-add-form" style="display:none;">
+        <div id="formFields" class="pm-form-fields"></div>
+        <div class="pm-form-actions">
+          <button id="saveRowBtn" class="pm-save-btn">Save</button>
+          <button id="cancelRowBtn" class="pm-cancel-btn">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div id="loadingSpinner" class="pm-loading">
+        <div class="pm-spinner"></div>
+        <p>Loading data...</p>
+      </div>
+
+      <!-- Table -->
+      <div id="tableContainer" class="pm-table-scroll" style="display:none;">
+        <table class="pm-table">
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        <div id="noDataMsg" class="pm-no-data" style="display:none;">No records found.</div>
+      </div>
+
+      <!-- Totals -->
+      <div id="totalsRow" class="pm-totals" style="display:none;">
+        <strong>Totals: </strong><span id="totalsContent"></span>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="data.js"></script>
+</body>
+</html>
