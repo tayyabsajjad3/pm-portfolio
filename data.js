@@ -4,12 +4,13 @@ const TABLE_CONFIG = {
   ongoing: {
     label: 'Ongoing Projects',
     table: 'ongoing_projects',
+    sortable: ['sap_id', 'nickname', 'delivery', 'forecast'],
     columns: [
-      { label: 'SAP ID',         field: 'sap_id',         type: 'textarea', total: false, format: '' },
-      { label: 'Nickname',       field: 'nickname',        type: 'textarea', total: false, format: '' },
-      { label: 'Delivery',       field: 'delivery',        type: 'number',   total: true,  format: 'currency' },
-      { label: 'Forecast',       field: 'forecast',        type: 'number',   total: true,  format: 'currency' },
-      { label: 'Imp. Rate',      field: 'imp_rate',        type: 'calc',     total: false, format: 'percent',
+      { label: 'SAP ID',         field: 'sap_id',         type: 'textarea', total: false, format: '', nowrap: true },
+      { label: 'Nickname',       field: 'nickname',        type: 'textarea', total: false, format: '', nowrap: true },
+      { label: 'Delivery',       field: 'delivery',        type: 'number',   total: true,  format: 'currency', nowrap: true },
+      { label: 'Forecast',       field: 'forecast',        type: 'number',   total: true,  format: 'currency', nowrap: true },
+      { label: 'Imp. Rate',      field: 'imp_rate',        type: 'calc',     total: false, format: 'percent', nowrap: true,
         calc: function(row){ var d=parseFloat(row.delivery)||0; var f=parseFloat(row.forecast)||0; return f>0?(d/f*100).toFixed(1):0; }
       },
       { label: 'PM Inputs',      field: 'pm_inputs',       type: 'textarea', total: false, format: '' },
@@ -19,14 +20,17 @@ const TABLE_CONFIG = {
   pipeline: {
     label: 'Pipeline',
     table: 'pipeline',
+    sortable: ['sap_id', 'stages'],
     columns: [
-      { label: 'SAP ID',         field: 'sap_id',         type: 'textarea', total: false, format: '' },
-      { label: 'Nickname',       field: 'nickname',        type: 'textarea', total: false, format: '' },
-      { label: 'Country',        field: 'country',         type: 'textarea', total: false, format: '' },
-      { label: 'Region',         field: 'region',          type: 'textarea', total: false, format: '' },
-      { label: 'Donor',          field: 'donor',           type: 'textarea', total: false, format: '' },
-      { label: 'Budget',         field: 'budget',          type: 'number',   total: true,  format: 'currency' },
-      { label: 'Stages',         field: 'stages',          type: 'select',   total: false, format: '',
+      { label: 'SAP ID',         field: 'sap_id',         type: 'textarea', total: false, format: '', nowrap: true },
+      { label: 'Nickname',       field: 'nickname',        type: 'textarea', total: false, format: '', nowrap: true },
+      { label: 'Country',        field: 'country',         type: 'textarea', total: false, format: '', nowrap: true },
+      { label: 'Region',         field: 'region',          type: 'select',   total: false, format: '', nowrap: true,
+        options: ['Africa','Africa Arab States','West Asia Arab States','Asia and Pacific','Europe','Inter-Regional','Global','The Americas','N/A']
+      },
+      { label: 'Donor',          field: 'donor',           type: 'textarea', total: false, format: '', nowrap: true },
+      { label: 'Budget',         field: 'budget',          type: 'number',   total: true,  format: 'currency', nowrap: true },
+      { label: 'Stages',         field: 'stages',          type: 'select',   total: false, format: '', nowrap: true,
         options: ['1- Department Concept review','2- SSS/PA Approval Workflow','3- SFS Internal Review','4- EB Approval','5- Donor Approval','6- Completed']
       },
       { label: 'Comments',       field: 'comments',        type: 'textarea', total: false, format: '' },
@@ -37,6 +41,7 @@ const TABLE_CONFIG = {
   partnerships: {
     label: 'Partnerships',
     table: 'partnerships',
+    sortable: [],
     columns: [
       { label: 'Partner',        field: 'partners',        type: 'textarea', total: false },
       { label: 'Status',         field: 'status',          type: 'textarea', total: false },
@@ -47,6 +52,7 @@ const TABLE_CONFIG = {
   knowledge: {
     label: 'Knowledge Products',
     table: 'knowledge_products',
+    sortable: [],
     columns: [
       { label: 'Agreed Action',  field: 'agreed_action',   type: 'textarea', total: false },
       { label: 'Status',         field: 'status',          type: 'textarea', total: false },
@@ -57,6 +63,7 @@ const TABLE_CONFIG = {
   innovations: {
     label: 'Innovations',
     table: 'innovations',
+    sortable: [],
     columns: [
       { label: 'Programme',      field: 'programme_description', type: 'textarea', total: false },
       { label: 'Partners',       field: 'partners',              type: 'textarea', total: false },
@@ -71,6 +78,7 @@ const TABLE_CONFIG = {
   admin: {
     label: 'Admin',
     table: 'admin_actions',
+    sortable: [],
     columns: [
       { label: 'Agreed Action',  field: 'agreed_action',   type: 'textarea', total: false },
       { label: 'Status',         field: 'status',          type: 'textarea', total: false },
@@ -85,6 +93,55 @@ let currentData  = [];
 let currentPM    = '';
 let currentYear  = '';
 let userRole     = '';
+let sortField    = null;
+let sortDir      = 'asc';
+
+// =============================================
+// SORT HELPER
+// =============================================
+function smartSort(a, b, field, dir) {
+  let aVal = a[field];
+  let bVal = b[field];
+
+  // nulls/empty last
+  const aEmpty = aVal === null || aVal === undefined || aVal === '';
+  const bEmpty = bVal === null || bVal === undefined || bVal === '';
+  if (aEmpty && bEmpty) return 0;
+  if (aEmpty) return 1;
+  if (bEmpty) return -1;
+
+  // N/A second to last
+  const aNA = String(aVal).trim().toUpperCase() === 'N/A';
+  const bNA = String(bVal).trim().toUpperCase() === 'N/A';
+  if (aNA && bNA) return 0;
+  if (aNA) return 1;
+  if (bNA) return -1;
+
+  // numbers
+  const aNum = parseFloat(aVal);
+  const bNum = parseFloat(bVal);
+  if (!isNaN(aNum) && !isNaN(bNum)) {
+    return dir === 'asc' ? aNum - bNum : bNum - aNum;
+  }
+
+  // strings
+  const aStr = String(aVal).toLowerCase();
+  const bStr = String(bVal).toLowerCase();
+  if (aStr < bStr) return dir === 'asc' ? -1 : 1;
+  if (aStr > bStr) return dir === 'asc' ? 1 : -1;
+  return 0;
+}
+
+function sortData(field) {
+  if (sortField === field) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortField = field;
+    sortDir = 'asc';
+  }
+  currentData.sort((a, b) => smartSort(a, b, field, sortDir));
+  renderTable(currentTable, currentData);
+}
 
 // =============================================
 // INIT
@@ -115,6 +172,8 @@ async function init() {
       document.querySelectorAll('.pm-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       currentTable = tab.getAttribute('data-table');
+      sortField = null;
+      sortDir = 'asc';
       closeAddForm();
       if (currentPM && currentYear) loadTable(currentTable);
     });
@@ -122,12 +181,18 @@ async function init() {
 
   document.getElementById('pmSelect').addEventListener('change', function() {
     currentPM = this.value;
-    loadYearDropdown();
+    currentYear = '';
+    // Reset year dropdown
+    document.getElementById('yearSelect').innerHTML = '<option value="">-- Select Year --</option>';
+    // Show blank screen
+    showBlank();
+    if (currentPM) loadYearDropdown();
   });
 
   document.getElementById('yearSelect').addEventListener('change', function() {
     currentYear = this.value;
     if (currentPM && currentYear) loadTable(currentTable);
+    else showBlank();
   });
 
   document.getElementById('addRowBtn').addEventListener('click', openAddForm);
@@ -135,10 +200,17 @@ async function init() {
   document.getElementById('saveRowBtn').addEventListener('click', saveNewRow);
   document.getElementById('copyPipelineBtn').addEventListener('click', copyFromPreviousYear);
 
-  showLoading(false);
+  showBlank();
+}
+
+function showBlank() {
+  document.getElementById('loadingSpinner').style.display = 'none';
   document.getElementById('tableContainer').style.display = 'none';
-  document.getElementById('tableBody').innerHTML = '<tr><td colspan="20" class="pm-no-data">Select a PM and year to view data.</td></tr>';
-  document.getElementById('tableContainer').style.display = 'block';
+  document.getElementById('totalsRow').style.display = 'none';
+  document.getElementById('noDataMsg').style.display = 'none';
+  document.getElementById('blankMsg').style.display = 'block';
+  var copyBtn = document.getElementById('copyPipelineBtn');
+  if (copyBtn) copyBtn.style.display = 'none';
 }
 
 async function handleLogout() {
@@ -186,6 +258,7 @@ async function loadTable(tableKey) {
   const config = TABLE_CONFIG[tableKey];
   if (!config || !currentPM || !currentYear) return;
 
+  document.getElementById('blankMsg').style.display = 'none';
   showLoading(true);
   setStatus('');
 
@@ -204,6 +277,14 @@ async function loadTable(tableKey) {
   }
 
   currentData = data || [];
+
+  // Default sort by sap_id asc if sortable
+  if (!sortField && config.sortable && config.sortable.includes('sap_id')) {
+    sortField = 'sap_id';
+    sortDir = 'asc';
+    currentData.sort((a, b) => smartSort(a, b, 'sap_id', 'asc'));
+  }
+
   renderTable(tableKey, currentData);
   showLoading(false);
 }
@@ -212,19 +293,27 @@ async function loadTable(tableKey) {
 // RENDER TABLE
 // =============================================
 function renderTable(tableKey, rows) {
-  const config  = TABLE_CONFIG[tableKey];
-  const thead   = document.getElementById('tableHead');
-  const tbody   = document.getElementById('tableBody');
-  const noData  = document.getElementById('noDataMsg');
-  const totals  = document.getElementById('totalsRow');
+  const config    = TABLE_CONFIG[tableKey];
+  const thead     = document.getElementById('tableHead');
+  const tbody     = document.getElementById('tableBody');
+  const noData    = document.getElementById('noDataMsg');
+  const totals    = document.getElementById('totalsRow');
   const container = document.getElementById('tableContainer');
 
-  // Show/hide copy button
   var copyBtn = document.getElementById('copyPipelineBtn');
   if (copyBtn) copyBtn.style.display = (tableKey === 'pipeline' && rows.length === 0) ? 'inline-block' : 'none';
 
   let headerHtml = '<tr>';
-  config.columns.forEach(col => { headerHtml += '<th>' + col.label + '</th>'; });
+  config.columns.forEach(col => {
+    const isSortable = config.sortable && config.sortable.includes(col.field);
+    if (isSortable) {
+      let arrow = '↕';
+      if (sortField === col.field) arrow = sortDir === 'asc' ? '↑' : '↓';
+      headerHtml += `<th style="cursor:pointer;user-select:none;white-space:nowrap;" onclick="sortData('${col.field}')">${col.label} <span style="opacity:0.7;font-size:0.8rem;">${arrow}</span></th>`;
+    } else {
+      headerHtml += `<th>${col.label}</th>`;
+    }
+  });
   headerHtml += '<th class="action-col">Del</th></tr>';
   thead.innerHTML = headerHtml;
 
@@ -240,12 +329,13 @@ function renderTable(tableKey, rows) {
       config.columns.forEach(col => {
         const val = row[col.field] !== null && row[col.field] !== undefined ? row[col.field] : '';
         const fmt = col.format || '';
+        const nowrap = col.nowrap ? 'white-space:nowrap;' : '';
         if (col.type === 'calc') {
           const calcVal = col.calc ? col.calc(row) : val;
-          bodyHtml += '<td class="calc-cell" data-field="' + col.field + '">' + formatValue(calcVal, fmt) + '</td>';
+          bodyHtml += `<td class="calc-cell" data-field="${col.field}" style="${nowrap}">${formatValue(calcVal, fmt)}</td>`;
         } else {
           const displayVal = fmt ? formatValue(val, fmt) : escapeHtml(String(val));
-          bodyHtml += '<td class="editable" data-field="' + col.field + '" data-type="' + col.type + '" data-format="' + fmt + '" data-raw="' + escapeHtml(String(val)) + '">' + displayVal + '</td>';
+          bodyHtml += `<td class="editable" data-field="${col.field}" data-type="${col.type}" data-format="${fmt}" data-raw="${escapeHtml(String(val))}" style="${nowrap}">${displayVal}</td>`;
         }
       });
       bodyHtml += '<td class="action-col"><button class="pm-delete-btn">🗑</button></td>';
@@ -286,13 +376,13 @@ function startEdit(cell) {
     var wrapper = document.createElement('div');
     wrapper.style.cssText = 'position:relative;width:100%;';
     var display = document.createElement('div');
-    display.style.cssText = 'padding:6px 10px;border:2px solid #0055a5;border-radius:5px;background:#fff;cursor:pointer;font-size:0.87rem;color:#1e2a3a;user-select:none;';
+    display.style.cssText = 'padding:6px 10px;border:2px solid #0055a5;border-radius:5px;background:#fff;cursor:pointer;font-size:0.87rem;color:#1e2a3a;user-select:none;white-space:nowrap;';
     display.textContent = current || '-- Select --';
     var dropdown = document.createElement('div');
-    dropdown.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #0055a5;border-radius:5px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;';
+    dropdown.style.cssText = 'position:absolute;top:100%;left:0;min-width:100%;background:#fff;border:1px solid #0055a5;border-radius:5px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;max-height:200px;overflow-y:auto;';
     colDef.options.forEach(opt => {
       var item = document.createElement('div');
-      item.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:0.87rem;color:#1e2a3a;';
+      item.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:0.87rem;color:#1e2a3a;white-space:nowrap;';
       item.textContent = opt;
       if (opt === current) item.style.background = '#eaf1fb';
       item.addEventListener('mouseover', () => item.style.background = '#eaf1fb');
@@ -393,7 +483,11 @@ function openAddForm() {
       col.options.forEach(opt => html += '<option value="' + opt + '">' + opt + '</option>');
       html += '</select>';
     } else if (col.type === 'number') {
-      html += '<input type="number" name="' + col.field + '" placeholder="' + col.label + '">';
+      const prefix = col.format === 'currency' ? '$' : '';
+      html += '<div style="display:flex;align-items:center;gap:4px;">';
+      if (prefix) html += `<span style="font-weight:600;color:#0055a5;">${prefix}</span>`;
+      html += '<input type="number" name="' + col.field + '" placeholder="' + col.label + '" style="flex:1;">';
+      html += '</div>';
     } else {
       html += '<textarea name="' + col.field + '" rows="2" placeholder="' + col.label + '"></textarea>';
     }
@@ -459,19 +553,13 @@ async function deleteRow(recordId, trElement, tableKey) {
 async function copyFromPreviousYear() {
   const config = TABLE_CONFIG['pipeline'];
   const currentYearInt = parseInt(currentYear);
-
   setStatus('Looking for previous year data...');
 
   const { data, error } = await sb.from('pipeline').select('*').eq('name', currentPM).lt('year', currentYearInt);
-  if (error || !data || data.length === 0) {
-    setStatus('No previous year data found.', true);
-    return;
-  }
+  if (error || !data || data.length === 0) { setStatus('No previous year data found.', true); return; }
 
-  const years = data.map(r => r.year);
-  const prevYear = Math.max(...years);
+  const prevYear = Math.max(...data.map(r => r.year));
   const prevRows = data.filter(r => r.year === prevYear);
-
   setStatus('Copying ' + prevRows.length + ' rows from ' + prevYear + '...');
 
   const newRows = prevRows.map(row => {
