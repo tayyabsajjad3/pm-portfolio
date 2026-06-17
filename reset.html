@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PM Portfolio — Reset Password</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f4ff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(0,51,102,0.12);
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 420px;
+    }
+    .logo { text-align: center; margin-bottom: 32px; }
+    .logo h1 { color: #003366; font-size: 1.7rem; font-weight: 700; }
+    .logo p { color: #5a6a85; font-size: 0.9rem; margin-top: 6px; }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #003366; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .form-group input {
+      width: 100%; padding: 11px 14px; border: 1.5px solid #c0cfe0;
+      border-radius: 7px; font-size: 0.95rem; color: #1e2a3a;
+      background: #f8fafd; font-family: inherit;
+    }
+    .form-group input:focus { outline: none; border-color: #003366; box-shadow: 0 0 0 3px rgba(0,51,102,0.1); }
+    .btn {
+      width: 100%; padding: 13px;
+      background: linear-gradient(135deg, #003366, #0055a5);
+      color: white; border: none; border-radius: 7px;
+      font-size: 1rem; font-weight: 600; cursor: pointer;
+      font-family: inherit; margin-top: 6px;
+    }
+    .btn:hover { opacity: 0.92; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .msg { margin-top: 16px; padding: 10px 14px; border-radius: 7px; font-size: 0.88rem; text-align: center; display: none; }
+    .msg.success { background: #e8f5e9; color: #2a7a2a; display: block; }
+    .msg.error { background: #fdecea; color: #c0392b; display: block; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <h1>PM Portfolio Sheet</h1>
+      <p>Set your new password</p>
+    </div>
+    <div class="form-group">
+      <label>New Password</label>
+      <input type="password" id="newPassword" placeholder="Min 6 characters">
+    </div>
+    <div class="form-group">
+      <label>Confirm Password</label>
+      <input type="password" id="confirmPassword" placeholder="Repeat new password">
+    </div>
+    <button class="btn" onclick="handleReset()">Set New Password</button>
+    <div id="resetMsg" class="msg"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script>
+    async function handleReset() {
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const msg = document.getElementById('resetMsg');
+
+      if (!newPassword || !confirmPassword) {
+        msg.textContent = 'Please fill in both fields.';
+        msg.className = 'msg error';
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        msg.textContent = 'Password must be at least 6 characters.';
+        msg.className = 'msg error';
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        msg.textContent = 'Passwords do not match.';
+        msg.className = 'msg error';
+        return;
+      }
+
+      const btn = document.querySelector('.btn');
+      btn.disabled = true;
+      btn.textContent = 'Updating...';
+
+      const { error } = await sb.auth.updateUser({ password: newPassword });
+
+      if (error) {
+        msg.textContent = error.message;
+        msg.className = 'msg error';
+        btn.disabled = false;
+        btn.textContent = 'Set New Password';
+        return;
+      }
+
+      msg.textContent = '✓ Password updated successfully! Redirecting to sign in...';
+      msg.className = 'msg success';
+
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 2000);
+    }
+  </script>
+</body>
+</html>
