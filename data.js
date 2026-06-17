@@ -225,7 +225,19 @@ async function loadPMDropdown() {
   const { data, error } = await sb.from('ongoing_projects').select('name').order('name');
   if (error) return;
 
-  const names = [...new Set(data.map(r => r.name).filter(Boolean))].sort();
+  function toTitleCase(str) {
+    return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  const seen = new Set();
+  const names = [];
+  (data || []).forEach(r => {
+    if (!r.name) return;
+    const normalized = toTitleCase(r.name.trim());
+    if (!seen.has(normalized)) { seen.add(normalized); names.push(normalized); }
+  });
+  names.sort();
+
   const select = document.getElementById('pmSelect');
   select.innerHTML = '<option value="">-- Select PM --</option>';
   names.forEach(name => {
