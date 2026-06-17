@@ -86,6 +86,23 @@ async function handleSignup() {
   });
 
   if (error) {
+    // If user already exists in Auth but has no profile (was removed), sign them in and create profile
+    if (error.message.toLowerCase().includes('already registered') || error.message.toLowerCase().includes('already exists')) {
+      const { data: signInData, error: signInError } = await sb.auth.signInWithPassword({ email, password });
+      if (!signInError && signInData.user) {
+        // Check if profile exists
+        const { data: profile } = await sb.from('profiles').select('id').eq('id', signInData.user.id).single();
+        if (!profile) {
+          // Create new pending profile
+          await sb.from('profiles').insert({ id: signInData.user.id, email, full_name: name, role: 'pending' });
+          showMsg('signupMsg', '✓ Account re-registered! Your request has been sent for approval.', 'success');
+          btn.disabled = false;
+          btn.textContent = 'Create Account';
+          setTimeout(() => { window.location.href = 'pending.html'; }, 2000);
+          return;
+        }
+      }
+    }
     showMsg('signupMsg', error.message, 'error');
     btn.disabled = false;
     btn.textContent = 'Create Account';
