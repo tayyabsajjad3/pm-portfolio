@@ -224,16 +224,38 @@ async function updateRole(userId, role, email, name, isPromotion) {
 }
 
 async function removeUser(userId) {
-  if (!confirm('Permanently remove this user? They will no longer be able to log in.')) return;
+  if (!confirm('Permanently remove this user? They will be able to sign up again.')) return;
+  
+  // Delete profile
   const { error } = await sb.from('profiles').delete().eq('id', userId);
   if (error) { alert('Error: ' + error.message); return; }
+
+  // Delete from Supabase Auth via Edge Function
+  const { data: { session } } = await sb.auth.getSession();
+  await fetch('https://dnmpjibzumrqggwlront.supabase.co/functions/v1/delete-user', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+    body: JSON.stringify({ userId })
+  });
+
   loadUsers();
 }
 
 async function rejectUser(userId, email, name) {
   if (!confirm('Reject and remove this user?')) return;
+
+  // Delete profile
   const { error } = await sb.from('profiles').delete().eq('id', userId);
   if (error) { alert('Error: ' + error.message); return; }
+
+  // Delete from Supabase Auth via Edge Function
+  const { data: { session } } = await sb.auth.getSession();
+  await fetch('https://dnmpjibzumrqggwlront.supabase.co/functions/v1/delete-user', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+    body: JSON.stringify({ userId })
+  });
+
   sendRejectionEmail(email, name);
   loadUsers();
 }
