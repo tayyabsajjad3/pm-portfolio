@@ -9,6 +9,8 @@ function switchTab(tab) {
   } else if (tab === 'signup') {
     document.querySelectorAll('.tab')[1].classList.add('active');
     document.getElementById('signupPanel').classList.add('active');
+  } else if (tab === 'forgot') {
+    document.getElementById('forgotPanel').classList.add('active');
   }
 }
 
@@ -16,12 +18,6 @@ function showMsg(id, text, type) {
   const el = document.getElementById(id);
   el.textContent = text;
   el.className = 'msg ' + type;
-}
-
-function showForgotPassword() {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('forgotPanel').classList.add('active');
 }
 
 async function handleLogin() {
@@ -46,7 +42,6 @@ async function handleLogin() {
     return;
   }
 
-  // Check user role
   const { data: profile } = await sb.from('profiles').select('role').eq('id', data.user.id).single();
 
   if (!profile || profile.role === 'pending') {
@@ -97,14 +92,11 @@ async function handleSignup() {
     return;
   }
 
-  // Wait a moment for profile trigger to fire then redirect
   showMsg('signupMsg', '✓ Account created! Your request has been sent for approval. An admin will review and approve your account shortly.', 'success');
   btn.disabled = false;
   btn.textContent = 'Create Account';
 
-  setTimeout(() => {
-    window.location.href = 'pending.html';
-  }, 2000);
+  setTimeout(() => { window.location.href = 'pending.html'; }, 2000);
 }
 
 async function handleForgotPassword() {

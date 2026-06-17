@@ -14,13 +14,44 @@
         <h1 class="pm-header-title">PM Portfolio Sheet</h1>
       </div>
       <div class="pm-header-right">
-        <span class="pm-user-badge">
-          <span>👤</span>
-          <span id="userEmail">--</span>
-          <span id="adminBadge" style="display:none; background:rgba(255,255,255,0.2); padding:2px 8px; border-radius:10px; font-size:0.75rem;">ADMIN</span>
-        </span>
-        <button class="pm-logout-btn" onclick="handleLogout()">Sign Out</button>
+        <!-- User dropdown -->
+        <div class="pm-user-dropdown" id="userDropdown">
+          <span class="pm-user-badge" onclick="toggleUserMenu()" style="cursor:pointer;">
+            <span>👤</span>
+            <span id="userEmail">--</span>
+            <span id="adminBadge" style="display:none;background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:10px;font-size:0.75rem;">ADMIN</span>
+            <span style="font-size:0.7rem;opacity:0.7;">▼</span>
+          </span>
+          <div class="pm-user-menu" id="userMenu" style="display:none;">
+            <div class="pm-user-menu-item" onclick="showChangePassword()">🔒 Change Password</div>
+            <div class="pm-user-menu-item" onclick="handleLogout()">🚪 Sign Out</div>
+          </div>
+        </div>
         <button id="adminPortalBtn" class="pm-admin-btn" style="display:none;" onclick="window.location.href='admin.html'">⚙ Admin</button>
+      </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+      <div style="background:#fff;border-radius:14px;padding:36px;width:100%;max-width:400px;margin:20px;">
+        <h2 style="color:#003366;margin-bottom:20px;font-size:1.2rem;">🔒 Change Password</h2>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:0.78rem;font-weight:600;color:#003366;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Current Password</label>
+          <input type="password" id="currentPassword" placeholder="Enter current password" style="width:100%;padding:10px 14px;border:1.5px solid #c0cfe0;border-radius:7px;font-size:0.95rem;font-family:inherit;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:0.78rem;font-weight:600;color:#003366;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">New Password</label>
+          <input type="password" id="newPasswordField" placeholder="Min 6 characters" style="width:100%;padding:10px 14px;border:1.5px solid #c0cfe0;border-radius:7px;font-size:0.95rem;font-family:inherit;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="display:block;font-size:0.78rem;font-weight:600;color:#003366;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Confirm New Password</label>
+          <input type="password" id="confirmNewPassword" placeholder="Repeat new password" style="width:100%;padding:10px 14px;border:1.5px solid #c0cfe0;border-radius:7px;font-size:0.95rem;font-family:inherit;box-sizing:border-box;">
+        </div>
+        <div id="changePasswordMsg" style="display:none;padding:10px 14px;border-radius:7px;font-size:0.88rem;margin-bottom:14px;"></div>
+        <div style="display:flex;gap:10px;">
+          <button onclick="submitChangePassword()" style="flex:1;padding:11px;background:linear-gradient(135deg,#003366,#0055a5);color:#fff;border:none;border-radius:7px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit;">Update Password</button>
+          <button onclick="hideChangePassword()" style="padding:11px 20px;background:#fff;color:#5a6a85;border:1px solid #c0cfe0;border-radius:7px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit;">Cancel</button>
+        </div>
       </div>
     </div>
 
@@ -54,7 +85,7 @@
     <div class="pm-table-area">
       <div class="pm-table-toolbar">
         <button id="addRowBtn" class="pm-add-btn">+ Add Row</button>
-        <button id="copyPipelineBtn" class="pm-add-btn" style="display:none; background:#2a7a2a;">⬇ Copy from Previous Year</button>
+        <button id="copyPipelineBtn" class="pm-add-btn" style="display:none;background:#2a7a2a;">⬇ Copy from Previous Year</button>
         <span id="statusMsg" class="pm-status-msg"></span>
       </div>
 
@@ -71,7 +102,7 @@
       <div id="blankMsg" class="pm-select-prompt">👆 Select a Portfolio Manager and Year to view data.</div>
 
       <!-- Loading -->
-      <div id="loadingSpinner" class="pm-loading">
+      <div id="loadingSpinner" class="pm-loading" style="display:none;">
         <div class="pm-spinner"></div>
         <p>Loading data...</p>
       </div>
