@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PM Portfolio — Pending Approval</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f4ff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(0,51,102,0.12);
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 460px;
+      text-align: center;
+    }
+    .icon { font-size: 3.5rem; margin-bottom: 20px; }
+    h1 { color: #003366; font-size: 1.5rem; font-weight: 700; margin-bottom: 12px; }
+    p { color: #5a6a85; font-size: 0.95rem; line-height: 1.6; margin-bottom: 16px; }
+    .steps {
+      background: #f8fafd;
+      border: 1px solid #c0cfe0;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin: 24px 0;
+      text-align: left;
+    }
+    .steps h3 { color: #003366; font-size: 0.9rem; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .step { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; font-size: 0.88rem; color: #2a3a50; }
+    .step-num { background: #003366; color: #fff; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+    .btn {
+      display: inline-block;
+      padding: 11px 28px;
+      background: linear-gradient(135deg, #003366, #0055a5);
+      color: white;
+      border: none;
+      border-radius: 7px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      font-family: inherit;
+      margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn-outline {
+      display: inline-block;
+      padding: 10px 24px;
+      background: transparent;
+      color: #003366;
+      border: 1.5px solid #003366;
+      border-radius: 7px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      margin-left: 10px;
+      font-family: inherit;
+    }
+    .btn-outline:hover { background: #f0f4ff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">⏳</div>
+    <h1>Request Pending Approval</h1>
+    <p>Your account has been created and is waiting for admin approval before you can access the portfolio.</p>
+
+    <div class="steps">
+      <h3>What happens next?</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>Your registration request has been sent to the admin</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>The admin will review and approve your account</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>Once approved, you can sign in and access all portfolio data</div>
+      </div>
+    </div>
+
+    <p>If you need urgent access, please contact your administrator directly.</p>
+
+    <a href="index.html" class="btn">Go to Sign In</a>
+    <button class="btn-outline" onclick="handleSignOut()">Sign Out</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script>
+    async function handleSignOut() {
+      await sb.auth.signOut();
+      window.location.href = 'index.html';
+    }
+
+    // Auto check if approved every 30 seconds
+    async function checkApproval() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'index.html'; return; }
+      const { data: profile } = await sb.from('profiles').select('role').eq('id', session.user.id).single();
+      if (profile && profile.role !== 'pending') {
+        window.location.href = 'data.html';
+      }
+    }
+
+    checkApproval();
+    setInterval(checkApproval, 30000);
+  </script>
+</body>
+</html>

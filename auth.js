@@ -95,9 +95,40 @@ async function handleSignup() {
     return;
   }
 
-  showMsg('signupMsg', '✓ Account created! Your request has been sent for approval. You will be able to sign in once an admin approves your account.', 'success');
+  showMsg('signupMsg', '✓ Account created! Your request has been sent for approval. An admin will review and approve your account shortly.', 'success');
   btn.disabled = false;
   btn.textContent = 'Create Account';
+}
+
+function showForgotPassword() {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('forgotPanel').classList.add('active');
+}
+
+async function handleForgotPassword() {
+  const email = document.getElementById('forgotEmail').value.trim();
+  if (!email) {
+    showMsg('forgotMsg', 'Please enter your email.', 'error');
+    return;
+  }
+
+  const btn = document.querySelector('#forgotPanel .btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://tayyabsajjad3.github.io/pm-portfolio/reset.html'
+  });
+
+  if (error) {
+    showMsg('forgotMsg', error.message, 'error');
+  } else {
+    showMsg('forgotMsg', '✓ Reset link sent! Check your email and click the link to reset your password.', 'success');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Send Reset Link';
 }
 
 // Check if already logged in
