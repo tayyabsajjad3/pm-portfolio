@@ -231,12 +231,14 @@ async function removeUser(userId) {
   if (error) { alert('Error: ' + error.message); return; }
 
   // Delete from Supabase Auth via Edge Function
-  const { data: { session } } = await sb.auth.getSession();
-  await fetch('https://dnmpjibzumrqggwlront.supabase.co/functions/v1/delete-user', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-    body: JSON.stringify({ userId })
-  });
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    await fetch('https://dnmpjibzumrqggwlront.supabase.co/functions/v1/delete-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ userId })
+    });
+  } catch(e) { console.error('Edge function error:', e); }
 
   loadUsers();
 }
@@ -249,12 +251,14 @@ async function rejectUser(userId, email, name) {
   if (error) { alert('Error: ' + error.message); return; }
 
   // Delete from Supabase Auth via Edge Function
-  const { data: { session } } = await sb.auth.getSession();
-  await fetch('https://dnmpjibzumrqggwlront.supabase.co/functions/v1/delete-user', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-    body: JSON.stringify({ userId })
-  });
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    await fetch('https://dnmpjibzumrqggwlront.supabase.co/functions/v1/delete-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ userId })
+    });
+  } catch(e) { console.error('Edge function error:', e); }
 
   sendRejectionEmail(email, name);
   loadUsers();
