@@ -1,5 +1,10 @@
 // PM Portfolio Sheet — Data Page Logic
 
+function toTitleCase(str) {
+  if (!str) return '';
+  return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
 const TABLE_CONFIG = {
   ongoing: {
     label: 'Ongoing Projects',
@@ -103,28 +108,24 @@ function smartSort(a, b, field, dir) {
   let aVal = a[field];
   let bVal = b[field];
 
-  // nulls/empty last
   const aEmpty = aVal === null || aVal === undefined || aVal === '';
   const bEmpty = bVal === null || bVal === undefined || bVal === '';
   if (aEmpty && bEmpty) return 0;
   if (aEmpty) return 1;
   if (bEmpty) return -1;
 
-  // N/A second to last
   const aNA = String(aVal).trim().toUpperCase() === 'N/A';
   const bNA = String(bVal).trim().toUpperCase() === 'N/A';
   if (aNA && bNA) return 0;
   if (aNA) return 1;
   if (bNA) return -1;
 
-  // numbers
   const aNum = parseFloat(aVal);
   const bNum = parseFloat(bVal);
   if (!isNaN(aNum) && !isNaN(bNum)) {
     return dir === 'asc' ? aNum - bNum : bNum - aNum;
   }
 
-  // strings
   const aStr = String(aVal).toLowerCase();
   const bStr = String(bVal).toLowerCase();
   if (aStr < bStr) return dir === 'asc' ? -1 : 1;
@@ -182,9 +183,7 @@ async function init() {
   document.getElementById('pmSelect').addEventListener('change', function() {
     currentPM = this.value;
     currentYear = '';
-    // Reset year dropdown
     document.getElementById('yearSelect').innerHTML = '<option value="">-- Select Year --</option>';
-    // Show blank screen
     showBlank();
     if (currentPM) loadYearDropdown();
   });
@@ -225,10 +224,6 @@ async function loadPMDropdown() {
   const { data, error } = await sb.from('ongoing_projects').select('name').order('name');
   if (error) return;
 
-  function toTitleCase(str) {
-    return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-  }
-
   const seen = new Set();
   const names = [];
   (data || []).forEach(r => {
@@ -249,10 +244,10 @@ async function loadPMDropdown() {
 }
 
 async function loadYearDropdown() {
-  const { data, error } = await sb.from('ongoing_projects').select('year').eq('name', currentPM).order('year');
+  const { data, error } = await sb.from('ongoing_projects').select('year').ilike('name', currentPM).order('year');
   if (error) return;
 
-  const years = [...new Set(data.map(r => r.year).filter(Boolean))].sort();
+  const years = [...new Set((data || []).map(r => r.year).filter(Boolean))].sort();
   const select = document.getElementById('yearSelect');
   select.innerHTML = '<option value="">-- Select Year --</option>';
   years.forEach(year => {
@@ -279,7 +274,7 @@ async function loadTable(tableKey) {
   const { data, error } = await sb
     .from(config.table)
     .select(fields)
-    .eq('name', currentPM)
+    .ilike('name', currentPM)
     .eq('year', parseInt(currentYear));
 
   if (error) {
@@ -290,7 +285,6 @@ async function loadTable(tableKey) {
 
   currentData = data || [];
 
-  // Default sort by sap_id asc if sortable
   if (!sortField && config.sortable && config.sortable.includes('sap_id')) {
     sortField = 'sap_id';
     sortDir = 'asc';
@@ -498,7 +492,7 @@ function openAddForm() {
       const prefix = col.format === 'currency' ? '$' : '';
       html += '<div style="display:flex;align-items:center;gap:4px;">';
       if (prefix) html += `<span style="font-weight:600;color:#0055a5;">${prefix}</span>`;
-      html += '<input type="number" name="' + col.field + '" placeholder="' + col.label + '" style="flex:1;">';
+      html += '<input type="number" name="' + col.field + '" placeholder="' + col.label + '" style="flex:1;min-width:0;">';
       html += '</div>';
     } else {
       html += '<textarea name="' + col.field + '" rows="2" placeholder="' + col.label + '"></textarea>';
@@ -567,7 +561,7 @@ async function copyFromPreviousYear() {
   const currentYearInt = parseInt(currentYear);
   setStatus('Looking for previous year data...');
 
-  const { data, error } = await sb.from('pipeline').select('*').eq('name', currentPM).lt('year', currentYearInt);
+  const { data, error } = await sb.from('pipeline').select('*').ilike('name', currentPM).lt('year', currentYearInt);
   if (error || !data || data.length === 0) { setStatus('No previous year data found.', true); return; }
 
   const prevYear = Math.max(...data.map(r => r.year));

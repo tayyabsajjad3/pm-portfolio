@@ -73,20 +73,33 @@ async function submitAllRows() {
   btn.textContent = 'Submitting...';
   showEntryStatus('Checking for duplicates...', 'info');
 
-  // Get all unique name+year combos to check
-  const nameYearPairs = toSubmit.map(r => `${r.pmName.toLowerCase()}__${r.year}`);
+  // Fetch all existing rows to check for full duplicates
+  const { data: existing } = await sb.from('ongoing_projects').select('name, year, sap_id, nickname, delivery, forecast, pm_inputs, fro_assessment');
 
-  // Check existing records
-  const { data: existing } = await sb.from('ongoing_projects').select('name, year');
-  const existingSet = new Set((existing || []).map(r => `${r.name.toLowerCase()}__${r.year}`));
+  function rowKey(name, year, sap_id, nickname, delivery, forecast, pm_inputs, fro_assessment) {
+    return [
+      (name||'').toLowerCase().trim(),
+      year,
+      (sap_id||'').toLowerCase().trim(),
+      (nickname||'').toLowerCase().trim(),
+      delivery ?? '',
+      forecast ?? '',
+      (pm_inputs||'').toLowerCase().trim(),
+      (fro_assessment||'').toLowerCase().trim()
+    ].join('__');
+  }
+
+  const existingSet = new Set((existing || []).map(r =>
+    rowKey(r.name, r.year, r.sap_id, r.nickname, r.delivery, r.forecast, r.pm_inputs, r.fro_assessment)
+  ));
 
   const newRows = [];
   const skipped = [];
 
   toSubmit.forEach(row => {
-    const key = `${row.pmName.toLowerCase()}__${row.year}`;
+    const key = rowKey(row.pmName, row.year, row.sap_id, row.nickname, row.delivery, row.forecast, row.pm_inputs, row.fro_assessment);
     if (existingSet.has(key)) {
-      skipped.push(`${row.pmName} (${row.year})`);
+      skipped.push(`${row.pmName} (${row.year}) — ${row.nickname || row.sap_id || 'row'}`);
     } else {
       newRows.push({ name: row.pmName, year: row.year, sap_id: row.sap_id, nickname: row.nickname, delivery: row.delivery, forecast: row.forecast, pm_inputs: row.pm_inputs, fro_assessment: row.fro_assessment });
       existingSet.add(key); // prevent duplicates within same submission
