@@ -6,7 +6,7 @@ function switchTab(tab) {
   if (tab === 'login') {
     document.querySelectorAll('.tab')[0].classList.add('active');
     document.getElementById('loginPanel').classList.add('active');
-  } else {
+  } else if (tab === 'signup') {
     document.querySelectorAll('.tab')[1].classList.add('active');
     document.getElementById('signupPanel').classList.add('active');
   }
@@ -16,6 +16,12 @@ function showMsg(id, text, type) {
   const el = document.getElementById(id);
   el.textContent = text;
   el.className = 'msg ' + type;
+}
+
+function showForgotPassword() {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('forgotPanel').classList.add('active');
 }
 
 async function handleLogin() {
@@ -44,7 +50,6 @@ async function handleLogin() {
   const { data: profile } = await sb.from('profiles').select('role').eq('id', data.user.id).single();
 
   if (!profile || profile.role === 'pending') {
-    await sb.auth.signOut();
     window.location.href = 'pending.html';
     return;
   }
@@ -82,10 +87,7 @@ async function handleSignup() {
   const { data, error } = await sb.auth.signUp({
     email,
     password,
-    options: {
-      data: { full_name: name },
-      emailRedirectTo: 'https://tayyabsajjad3.github.io/pm-portfolio/pending.html'
-    }
+    options: { data: { full_name: name } }
   });
 
   if (error) {
@@ -95,15 +97,14 @@ async function handleSignup() {
     return;
   }
 
+  // Wait a moment for profile trigger to fire then redirect
   showMsg('signupMsg', '✓ Account created! Your request has been sent for approval. An admin will review and approve your account shortly.', 'success');
   btn.disabled = false;
   btn.textContent = 'Create Account';
-}
 
-function showForgotPassword() {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('forgotPanel').classList.add('active');
+  setTimeout(() => {
+    window.location.href = 'pending.html';
+  }, 2000);
 }
 
 async function handleForgotPassword() {
@@ -136,11 +137,11 @@ async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     const { data: profile } = await sb.from('profiles').select('role').eq('id', session.user.id).single();
-    if (profile && profile.role === 'pending') {
+    if (!profile || profile.role === 'pending') {
       window.location.href = 'pending.html';
-    } else if (profile && profile.role === 'disabled') {
+    } else if (profile.role === 'disabled') {
       await sb.auth.signOut();
-    } else if (profile && profile.role !== 'pending') {
+    } else {
       window.location.href = 'data.html';
     }
   }
