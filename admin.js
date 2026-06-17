@@ -13,10 +13,8 @@ async function init() {
     return;
   }
 
-  // Add initial 10 rows
   initPasteHandler();
   for (let i = 0; i < 10; i++) addEntryRow();
-
   loadUsers();
 }
 
@@ -43,7 +41,6 @@ function addEntryRow() {
 }
 
 async function submitAllRows() {
-  const statusEl = document.getElementById('entryStatus');
   const rows = document.querySelectorAll('#entryTableBody tr');
   const toSubmit = [];
 
@@ -57,42 +54,25 @@ async function submitAllRows() {
     const forecast = inputs[5].value.trim();
     const pmInputs = inputs[6].value.trim();
     const froAssessment = inputs[7].value.trim();
-
     if (pmName && year) {
       toSubmit.push({ pmName, year, sap_id: sapId, nickname, delivery: delivery !== '' ? parseFloat(delivery) : null, forecast: forecast !== '' ? parseFloat(forecast) : null, pm_inputs: pmInputs, fro_assessment: froAssessment });
     }
   });
 
-  if (toSubmit.length === 0) {
-    showEntryStatus('No rows to submit — fill in at least Name and Year.', 'error');
-    return;
-  }
+  if (toSubmit.length === 0) { showEntryStatus('No rows to submit — fill in at least Name and Year.', 'error'); return; }
 
   const btn = document.querySelector('.submit-all-btn');
   btn.disabled = true;
   btn.textContent = 'Submitting...';
   showEntryStatus('Checking for duplicates...', 'info');
 
-  // Fetch all existing rows to check for full duplicates
   const { data: existing } = await sb.from('ongoing_projects').select('name, year, sap_id, nickname, delivery, forecast, pm_inputs, fro_assessment');
 
   function rowKey(name, year, sap_id, nickname, delivery, forecast, pm_inputs, fro_assessment) {
-    return [
-      (name||'').toLowerCase().trim(),
-      year,
-      (sap_id||'').toLowerCase().trim(),
-      (nickname||'').toLowerCase().trim(),
-      delivery ?? '',
-      forecast ?? '',
-      (pm_inputs||'').toLowerCase().trim(),
-      (fro_assessment||'').toLowerCase().trim()
-    ].join('__');
+    return [(name||'').toLowerCase().trim(), year, (sap_id||'').toLowerCase().trim(), (nickname||'').toLowerCase().trim(), delivery ?? '', forecast ?? '', (pm_inputs||'').toLowerCase().trim(), (fro_assessment||'').toLowerCase().trim()].join('__');
   }
 
-  const existingSet = new Set((existing || []).map(r =>
-    rowKey(r.name, r.year, r.sap_id, r.nickname, r.delivery, r.forecast, r.pm_inputs, r.fro_assessment)
-  ));
-
+  const existingSet = new Set((existing || []).map(r => rowKey(r.name, r.year, r.sap_id, r.nickname, r.delivery, r.forecast, r.pm_inputs, r.fro_assessment)));
   const newRows = [];
   const skipped = [];
 
@@ -102,7 +82,7 @@ async function submitAllRows() {
       skipped.push(`${row.pmName} (${row.year}) — ${row.nickname || row.sap_id || 'row'}`);
     } else {
       newRows.push({ name: row.pmName, year: row.year, sap_id: row.sap_id, nickname: row.nickname, delivery: row.delivery, forecast: row.forecast, pm_inputs: row.pm_inputs, fro_assessment: row.fro_assessment });
-      existingSet.add(key); // prevent duplicates within same submission
+      existingSet.add(key);
     }
   });
 
@@ -111,12 +91,8 @@ async function submitAllRows() {
 
   if (newRows.length > 0) {
     const { error } = await sb.from('ongoing_projects').insert(newRows);
-    if (error) {
-      failed = newRows.length;
-      console.error(error);
-    } else {
-      submitted = newRows.length;
-    }
+    if (error) { failed = newRows.length; console.error(error); }
+    else { submitted = newRows.length; }
   }
 
   btn.disabled = false;
@@ -126,19 +102,14 @@ async function submitAllRows() {
   if (submitted > 0) msg += `✓ ${submitted} row(s) submitted successfully. `;
   if (skipped.length > 0) msg += `⚠ ${skipped.length} skipped (already exist): ${skipped.join(', ')}. `;
   if (failed > 0) msg += `✕ ${failed} row(s) failed.`;
+  showEntryStatus(msg, failed > 0 ? 'error' : skipped.length > 0 ? 'info' : 'success');
 
-  const type = failed > 0 ? 'error' : skipped.length > 0 ? 'info' : 'success';
-  showEntryStatus(msg, type);
-
-  // Clear only successfully submitted rows
   if (submitted > 0) {
     const submittedKeys = new Set(newRows.map(r => `${r.name.toLowerCase()}__${r.year}`));
     rows.forEach(row => {
       const inputs = row.querySelectorAll('input');
       const key = `${inputs[0].value.trim().toLowerCase()}__${parseInt(inputs[1].value.trim())}`;
-      if (submittedKeys.has(key)) {
-        inputs.forEach(input => input.value = '');
-      }
+      if (submittedKeys.has(key)) inputs.forEach(input => input.value = '');
     });
   }
 }
@@ -157,7 +128,7 @@ async function loadUsers() {
   if (error) { document.getElementById('pendingContainer').innerHTML = '<p class="empty-msg">Error loading users.</p>'; return; }
 
   const pending = users.filter(u => u.role === 'pending');
-  const all = users.filter(u => u.role !== 'pending'); // includes disabled
+  const all = users.filter(u => u.role !== 'pending');
 
   if (pending.length === 0) {
     document.getElementById('pendingContainer').innerHTML = '<p class="empty-msg">No pending approvals.</p>';
@@ -166,7 +137,7 @@ async function loadUsers() {
       <table class="user-table">
         <thead><tr><th>Name</th><th>Email</th><th>Registered</th><th>Actions</th></tr></thead>
         <tbody>${pending.map(u => `
-          <tr>
+          <tr id="row_${u.id}">
             <td>${u.full_name || '—'}</td>
             <td>${u.email}</td>
             <td>${new Date(u.created_at).toLocaleDateString()}</td>
@@ -187,7 +158,7 @@ async function loadUsers() {
       <table class="user-table">
         <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Actions</th></tr></thead>
         <tbody>${all.map(u => `
-          <tr>
+          <tr id="row_${u.id}">
             <td>${u.full_name || '—'}</td>
             <td>${u.email}</td>
             <td><span class="role-badge ${u.role}">${u.role}</span></td>
@@ -202,137 +173,117 @@ async function loadUsers() {
   }
 }
 
+async function deleteFromAuth(userId) {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const res = await fetch('https://dnmpjibzumrqggwlront.supabase.co/functions/v1/delete-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ userId })
+    });
+    const result = await res.json();
+    console.log('Edge function result:', result);
+  } catch(e) {
+    console.error('Edge function error:', e);
+  }
+}
+
+function removeRowFromUI(userId) {
+  const row = document.getElementById('row_' + userId);
+  if (row) row.remove();
+}
+
 async function approveUser(userId, email, name) {
   const { error } = await sb.from('profiles').update({ role: 'user' }).eq('id', userId);
   if (error) { alert('Error: ' + error.message); return; }
-  sendApprovalEmail(email, name, 'user');
+  removeRowFromUI(userId);
   loadUsers();
+  // Open email after UI update
+  setTimeout(() => sendApprovalEmail(email, name, 'user'), 500);
 }
 
 async function approveAsAdmin(userId, email, name) {
   const { error } = await sb.from('profiles').update({ role: 'admin' }).eq('id', userId);
   if (error) { alert('Error: ' + error.message); return; }
-  sendApprovalEmail(email, name, 'admin');
+  removeRowFromUI(userId);
   loadUsers();
+  setTimeout(() => sendApprovalEmail(email, name, 'admin'), 500);
 }
 
 async function updateRole(userId, role, email, name, isPromotion) {
   const { error } = await sb.from('profiles').update({ role }).eq('id', userId);
   if (error) { alert('Error: ' + error.message); return; }
-  if (isPromotion) sendRoleChangeEmail(email, name, role);
   loadUsers();
+  if (isPromotion) setTimeout(() => sendRoleChangeEmail(email, name, role), 500);
 }
 
 async function removeUser(userId) {
   if (!confirm('Permanently remove this user? They will be able to sign up again.')) return;
-  
-  // Delete profile
   const { error } = await sb.from('profiles').delete().eq('id', userId);
   if (error) { alert('Error: ' + error.message); return; }
-
-  // Delete from Supabase Auth via Edge Function
-  try {
-    const { data: { session } } = await sb.auth.getSession();
-    await fetch('https://dnmpjibzumrqggwlront.supabase.co/functions/v1/delete-user', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-      body: JSON.stringify({ userId })
-    });
-  } catch(e) { console.error('Edge function error:', e); }
-
+  removeRowFromUI(userId);
+  await deleteFromAuth(userId);
   loadUsers();
 }
 
 async function rejectUser(userId, email, name) {
   if (!confirm('Reject and remove this user?')) return;
-
-  // Delete profile
   const { error } = await sb.from('profiles').delete().eq('id', userId);
   if (error) { alert('Error: ' + error.message); return; }
-
-  // Delete from Supabase Auth via Edge Function
-  try {
-    const { data: { session } } = await sb.auth.getSession();
-    await fetch('https://dnmpjibzumrqggwlront.supabase.co/functions/v1/delete-user', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-      body: JSON.stringify({ userId })
-    });
-  } catch(e) { console.error('Edge function error:', e); }
-
-  sendRejectionEmail(email, name);
+  removeRowFromUI(userId);
+  await deleteFromAuth(userId);
   loadUsers();
+  setTimeout(() => sendRejectionEmail(email, name), 500);
 }
 
 function sendApprovalEmail(email, name, role) {
   const greeting = name ? `Hi ${name},` : 'Hi,';
   const subject = encodeURIComponent('PM Portfolio Sheet — Account Approved');
   const body = encodeURIComponent(`${greeting}\n\nYour account has been approved! You now have ${role === 'admin' ? 'admin' : ''} access to the PM Portfolio Sheet.\n\nSign in at:\nhttps://tayyabsajjad3.github.io/pm-portfolio\n\nBest regards,\nPM Portfolio Admin`);
-  window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+  window.open(`mailto:${email}?subject=${subject}&body=${body}`);
 }
 
 function sendRoleChangeEmail(email, name, role) {
   const subject = encodeURIComponent('PM Portfolio Sheet — Role Updated');
   const body = encodeURIComponent(`Hi ${name || ''},\n\nYour role has been updated to: ${role}.\n\nSign in at:\nhttps://tayyabsajjad3.github.io/pm-portfolio\n\nBest regards,\nPM Portfolio Admin`);
-  window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+  window.open(`mailto:${email}?subject=${subject}&body=${body}`);
 }
 
 function sendRejectionEmail(email, name) {
   const subject = encodeURIComponent('PM Portfolio Sheet — Account Request');
   const body = encodeURIComponent(`Hi ${name || ''},\n\nWe were unable to approve your account request at this time.\n\nIf you believe this is a mistake, please contact your administrator.\n\nBest regards,\nPM Portfolio Admin`);
-  window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+  window.open(`mailto:${email}?subject=${subject}&body=${body}`);
 }
 
-init();
-
 // =============================================
-// EXCEL PASTE HANDLER
+// PASTE HANDLER
 // =============================================
 function initPasteHandler() {
   const tbody = document.getElementById('entryTableBody');
-  
   tbody.addEventListener('paste', function(e) {
     e.preventDefault();
-    
     const clipText = (e.clipboardData || window.clipboardData).getData('text');
     if (!clipText) return;
-
-    // Parse pasted data — split by newlines then tabs
     const pastedRows = clipText.trim().split(/\r?\n/).map(row => row.split('\t'));
-    
-    // Find which cell was clicked
     const activeCell = document.activeElement;
     const activeTd = activeCell ? activeCell.closest('td') : null;
     const activeTr = activeCell ? activeCell.closest('tr') : null;
-    
     if (!activeTr) return;
-
-    // Find start row and column indices
     const allRows = Array.from(tbody.querySelectorAll('tr'));
     let startRowIdx = allRows.indexOf(activeTr);
-    
     const allCells = Array.from(activeTr.querySelectorAll('td'));
-    let startColIdx = activeTd ? allCells.indexOf(activeTd) - 1 : 0; // -1 for row number col
+    let startColIdx = activeTd ? allCells.indexOf(activeTd) - 1 : 0;
     if (startColIdx < 0) startColIdx = 0;
-
-    // Add enough rows if needed
     const rowsNeeded = startRowIdx + pastedRows.length;
-    while (tbody.querySelectorAll('tr').length < rowsNeeded) {
-      addEntryRow();
-    }
-
+    while (tbody.querySelectorAll('tr').length < rowsNeeded) addEntryRow();
     const updatedRows = Array.from(tbody.querySelectorAll('tr'));
-
     pastedRows.forEach((pastedRow, rIdx) => {
       const tr = updatedRows[startRowIdx + rIdx];
       if (!tr) return;
       const inputs = tr.querySelectorAll('input');
-      
       pastedRow.forEach((cellVal, cIdx) => {
         const inputIdx = startColIdx + cIdx;
-        if (inputs[inputIdx]) {
-          inputs[inputIdx].value = cellVal.trim();
-        }
+        if (inputs[inputIdx]) inputs[inputIdx].value = cellVal.trim();
       });
     });
   });
@@ -345,9 +296,7 @@ async function exportAllToExcel() {
   const btn = document.getElementById('exportBtn');
   btn.disabled = true;
   btn.textContent = '⏳ Exporting...';
-
   try {
-    // Fetch all 6 tables
     const tables = [
       { name: 'Ongoing Projects', table: 'ongoing_projects', fields: ['name','year','sap_id','nickname','delivery','forecast','pm_inputs','fro_assessment'] },
       { name: 'Pipeline',         table: 'pipeline',         fields: ['name','year','sap_id','nickname','country','region','donor','budget','stages','comments','pm_inputs','fro_assessment'] },
@@ -356,32 +305,18 @@ async function exportAllToExcel() {
       { name: 'Innovations',      table: 'innovations',      fields: ['name','year','programme_description','partners','action_plan_q1','action_plan_q2','action_plan_q3','action_plan_q4','pm_inputs','fro_assessment'] },
       { name: 'Admin',            table: 'admin_actions',    fields: ['name','year','agreed_action','status','pm_inputs','fro_assessment'] },
     ];
-
     const wb = XLSX.utils.book_new();
-
     for (const t of tables) {
       const { data, error } = await sb.from(t.table).select(t.fields.join(',')).order('name').order('year');
       if (error) { console.error(error); continue; }
-
-      // Build header row (capitalize)
       const headers = t.fields.map(f => f.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
-
-      // Build data rows
       const rows = (data || []).map(row => t.fields.map(f => row[f] ?? ''));
-
-      // Create worksheet
       const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-
-      // Set column widths
       ws['!cols'] = headers.map(() => ({ wch: 20 }));
-
       XLSX.utils.book_append_sheet(wb, ws, t.name);
     }
-
-    // Download
     const date = new Date().toISOString().split('T')[0];
     XLSX.writeFile(wb, `PM_Portfolio_Export_${date}.xlsx`);
-
     btn.disabled = false;
     btn.textContent = '⬇ Export All to Excel';
   } catch (err) {
@@ -391,3 +326,5 @@ async function exportAllToExcel() {
     alert('Export failed: ' + err.message);
   }
 }
+
+init();
