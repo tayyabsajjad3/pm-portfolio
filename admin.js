@@ -311,3 +311,57 @@ function initPasteHandler() {
     });
   });
 }
+
+// =============================================
+// EXPORT TO EXCEL
+// =============================================
+async function exportAllToExcel() {
+  const btn = document.getElementById('exportBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Exporting...';
+
+  try {
+    // Fetch all 6 tables
+    const tables = [
+      { name: 'Ongoing Projects', table: 'ongoing_projects', fields: ['name','year','sap_id','nickname','delivery','forecast','pm_inputs','fro_assessment'] },
+      { name: 'Pipeline',         table: 'pipeline',         fields: ['name','year','sap_id','nickname','country','region','donor','budget','stages','comments','pm_inputs','fro_assessment'] },
+      { name: 'Partnerships',     table: 'partnerships',     fields: ['name','year','partners','status','pm_inputs','fro_assessment'] },
+      { name: 'Knowledge Products', table: 'knowledge_products', fields: ['name','year','agreed_action','status','pm_inputs','fro_assessment'] },
+      { name: 'Innovations',      table: 'innovations',      fields: ['name','year','programme_description','partners','action_plan_q1','action_plan_q2','action_plan_q3','action_plan_q4','pm_inputs','fro_assessment'] },
+      { name: 'Admin',            table: 'admin_actions',    fields: ['name','year','agreed_action','status','pm_inputs','fro_assessment'] },
+    ];
+
+    const wb = XLSX.utils.book_new();
+
+    for (const t of tables) {
+      const { data, error } = await sb.from(t.table).select(t.fields.join(',')).order('name').order('year');
+      if (error) { console.error(error); continue; }
+
+      // Build header row (capitalize)
+      const headers = t.fields.map(f => f.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
+
+      // Build data rows
+      const rows = (data || []).map(row => t.fields.map(f => row[f] ?? ''));
+
+      // Create worksheet
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+      // Set column widths
+      ws['!cols'] = headers.map(() => ({ wch: 20 }));
+
+      XLSX.utils.book_append_sheet(wb, ws, t.name);
+    }
+
+    // Download
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `PM_Portfolio_Export_${date}.xlsx`);
+
+    btn.disabled = false;
+    btn.textContent = '⬇ Export All to Excel';
+  } catch (err) {
+    console.error(err);
+    btn.disabled = false;
+    btn.textContent = '⬇ Export All to Excel';
+    alert('Export failed: ' + err.message);
+  }
+}

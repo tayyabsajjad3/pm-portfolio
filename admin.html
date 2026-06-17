@@ -53,10 +53,18 @@
       <a href="data.html" class="back-btn">← Back to Portfolio</a>
     </div>
 
+
+    <!-- Export -->
+    <div class="admin-card">
+      <h2>📊 Export Data</h2>
+      <p style="color:#5a6a85;font-size:0.88rem;margin-bottom:16px;">Download all 6 tables (all PMs, all years) as a single Excel file with 6 sheets.</p>
+      <button id="exportBtn" class="submit-all-btn" onclick="exportAllToExcel()">⬇ Export All to Excel</button>
+    </div>
+
     <!-- Data Entry -->
     <div class="admin-card">
       <h2>📥 Submit Ongoing Projects Data</h2>
-      <p style="color:#5a6a85;font-size:0.88rem;margin-bottom:16px;">Fill in any number of rows — mix different PMs and years. Duplicate rows (same Name + Year) will be skipped automatically.</p>
+      <p style="color:#5a6a85;font-size:0.88rem;margin-bottom:16px;">Fill in any number of rows — mix different PMs and years. Completely identical rows will be skipped automatically.</p>
 
       <div class="entry-table-wrap">
         <table class="entry-table">
@@ -98,6 +106,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase.js"></script>
   <script src="admin.js"></script>
