@@ -658,3 +658,78 @@ function escapeHtml(text) {
 }
 
 init();
+
+// =============================================
+// USER MENU & CHANGE PASSWORD
+// =============================================
+function toggleUserMenu() {
+  const menu = document.getElementById('userMenu');
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+// Close menu when clicking outside
+document.addEventListener('click', function(e) {
+  const dropdown = document.getElementById('userDropdown');
+  if (dropdown && !dropdown.contains(e.target)) {
+    const menu = document.getElementById('userMenu');
+    if (menu) menu.style.display = 'none';
+  }
+});
+
+function showChangePassword() {
+  document.getElementById('userMenu').style.display = 'none';
+  const modal = document.getElementById('changePasswordModal');
+  modal.style.display = 'flex';
+  document.getElementById('currentPassword').value = '';
+  document.getElementById('newPasswordField').value = '';
+  document.getElementById('confirmNewPassword').value = '';
+  document.getElementById('changePasswordMsg').style.display = 'none';
+}
+
+function hideChangePassword() {
+  document.getElementById('changePasswordModal').style.display = 'none';
+}
+
+async function submitChangePassword() {
+  const current = document.getElementById('currentPassword').value;
+  const newPass = document.getElementById('newPasswordField').value;
+  const confirm = document.getElementById('confirmNewPassword').value;
+  const msgEl = document.getElementById('changePasswordMsg');
+
+  function showCPMsg(text, type) {
+    msgEl.textContent = text;
+    msgEl.style.display = 'block';
+    msgEl.style.background = type === 'success' ? '#e8f5e9' : '#fdecea';
+    msgEl.style.color = type === 'success' ? '#2a7a2a' : '#c0392b';
+  }
+
+  if (!current || !newPass || !confirm) {
+    showCPMsg('Please fill in all fields.', 'error'); return;
+  }
+  if (newPass.length < 6) {
+    showCPMsg('New password must be at least 6 characters.', 'error'); return;
+  }
+  if (newPass !== confirm) {
+    showCPMsg('New passwords do not match.', 'error'); return;
+  }
+
+  // Verify current password by re-signing in
+  const { data: { user } } = await sb.auth.getUser();
+  const { error: signInError } = await sb.auth.signInWithPassword({
+    email: user.email,
+    password: current
+  });
+
+  if (signInError) {
+    showCPMsg('Current password is incorrect.', 'error'); return;
+  }
+
+  // Update password
+  const { error } = await sb.auth.updateUser({ password: newPass });
+  if (error) {
+    showCPMsg(error.message, 'error'); return;
+  }
+
+  showCPMsg('✓ Password updated successfully!', 'success');
+  setTimeout(() => hideChangePassword(), 2000);
+}
