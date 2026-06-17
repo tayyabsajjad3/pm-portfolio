@@ -157,7 +157,7 @@ async function loadUsers() {
   if (error) { document.getElementById('pendingContainer').innerHTML = '<p class="empty-msg">Error loading users.</p>'; return; }
 
   const pending = users.filter(u => u.role === 'pending');
-  const all = users.filter(u => u.role !== 'pending');
+  const all = users.filter(u => u.role !== 'pending'); // includes disabled
 
   if (pending.length === 0) {
     document.getElementById('pendingContainer').innerHTML = '<p class="empty-msg">No pending approvals.</p>';
@@ -224,15 +224,15 @@ async function updateRole(userId, role, email, name, isPromotion) {
 }
 
 async function removeUser(userId) {
-  if (!confirm('Remove this user?')) return;
-  const { error } = await sb.from('profiles').delete().eq('id', userId);
+  if (!confirm('Disable this user? They will no longer be able to log in.')) return;
+  const { error } = await sb.from('profiles').update({ role: 'disabled' }).eq('id', userId);
   if (error) { alert('Error: ' + error.message); return; }
   loadUsers();
 }
 
 async function rejectUser(userId, email, name) {
-  if (!confirm('Reject and remove this user?')) return;
-  const { error } = await sb.from('profiles').delete().eq('id', userId);
+  if (!confirm('Reject this user?')) return;
+  const { error } = await sb.from('profiles').update({ role: 'disabled' }).eq('id', userId);
   if (error) { alert('Error: ' + error.message); return; }
   sendRejectionEmail(email, name);
   loadUsers();

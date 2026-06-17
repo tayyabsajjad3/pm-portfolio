@@ -45,18 +45,19 @@ async function handleLogin() {
 
   if (!profile || profile.role === 'pending') {
     await sb.auth.signOut();
-    showMsg('loginMsg', 'Your account is pending approval. Please wait for an admin to approve your account.', 'info');
+    window.location.href = 'pending.html';
+    return;
+  }
+
+  if (profile.role === 'disabled') {
+    await sb.auth.signOut();
+    showMsg('loginMsg', 'Your account has been disabled. Please contact your administrator.', 'error');
     btn.disabled = false;
     btn.textContent = 'Sign In';
     return;
   }
 
-  // Redirect based on role
-  if (profile.role === 'admin') {
-    window.location.href = 'data.html';
-  } else {
-    window.location.href = 'data.html';
-  }
+  window.location.href = 'data.html';
 }
 
 async function handleSignup() {
@@ -81,7 +82,10 @@ async function handleSignup() {
   const { data, error } = await sb.auth.signUp({
     email,
     password,
-    options: { data: { full_name: name } }
+    options: {
+      data: { full_name: name },
+      emailRedirectTo: 'https://tayyabsajjad3.github.io/pm-portfolio/pending.html'
+    }
   });
 
   if (error) {
@@ -91,7 +95,7 @@ async function handleSignup() {
     return;
   }
 
-  showMsg('signupMsg', 'Account created! Please check your email to verify your address. After verification, an admin will approve your account.', 'success');
+  showMsg('signupMsg', '✓ Account created! Your request has been sent for approval. You will be able to sign in once an admin approves your account.', 'success');
   btn.disabled = false;
   btn.textContent = 'Create Account';
 }
@@ -101,7 +105,11 @@ async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     const { data: profile } = await sb.from('profiles').select('role').eq('id', session.user.id).single();
-    if (profile && profile.role !== 'pending') {
+    if (profile && profile.role === 'pending') {
+      window.location.href = 'pending.html';
+    } else if (profile && profile.role === 'disabled') {
+      await sb.auth.signOut();
+    } else if (profile && profile.role !== 'pending') {
       window.location.href = 'data.html';
     }
   }
